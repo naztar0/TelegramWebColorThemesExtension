@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Telegram Web Color Themes</title>
+    <link rel="stylesheet" href="css/popup.css">
+</head>
+<body>
+    <div id="header">
+        <span id="statusDetail">Change the color theme</span>
+    </div>
+    <div id="popupContent" style="opacity: 1;">
+        <div class="group">
+            <div class="menuOption">
+                <input type="color" id="color-picker">
+                <label for="color-picker">Color theme</label>
+            </div>
+        </div>
+        <div class="group">
+            <div class="menuOption">
+                <input type="checkbox" id="rainbow-checkbox">
+                <label for="rainbow-checkbox">Rainbow mode</label>
+            </div>
+            <div id="rainbow-settings">
+                <div class="menuOption">
+                    <input type="range" min="1" max="200" id="rainbow-speed" value="10">
+                    <label for="rainbow-speed">Speed</label>
+                    <span id="rainbow-speed-text"></span>
+                </div>
+                <div class="menuOption">
+                    <input type="range" min="0" max="10" id="rainbow-saturation">
+                    <label for="rainbow-saturation">Saturation</label>
+                </div>
+                <div class="menuOption">
+                    <input type="range" min="0" max="10" id="rainbow-value">
+                    <label for="rainbow-value">Value</label>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="js/popup.js"></script>
+</body>
+</html>
