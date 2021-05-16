@@ -83,8 +83,8 @@ function modK(arr, wrap=true) {
 }
 
 function changeTheme() {
-    let elem = document.getElementsByClassName("night")[0];
-    if (!elem)
+    let elem = document.getElementsByClassName("theme-dark")[0];
+    if (!elem)  // there must be a separate handler for light theme
         return;
     let elemCss = elem.style['cssText'].split('; ');
     for (let i = 0; i < elemCss.length; i++) {
