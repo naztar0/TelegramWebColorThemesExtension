@@ -1,10 +1,10 @@
 {
   "name": "Telegram Web Color Themes",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "manifest_version": 3,
   "description": "Change theme color for Telegram Web",
   "author": "Neulen",
-  "homepage_url": "https://webz.telegram.org/",
+  "homepage_url": "https://web.telegram.org/z/",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
@@ -16,15 +16,15 @@
     "default_popup": "src/popup.html"
   },
   "permissions": [
-    "storage",
-    "tabs"
+    "storage"
   ],
   "host_permissions": [
-    "https://webz.telegram.org/*"
+    "https://webz.telegram.org/*",
+    "https://web.telegram.org/z/*"
   ],
   "content_scripts": [
     {
-      "matches": [ "https://webz.telegram.org/*" ],
+      "matches": [ "https://webz.telegram.org/*", "https://web.telegram.org/z/*" ],
       "js": [ "src/js/inject.js" ]
     }
   ]
