@@ -1,14 +1,18 @@
-let color_theme = null;
-let default_theme = [131, 120, 219];
+const STYLE_ID = "tg-color-themes";
+const default_theme = [131, 120, 219];
 
-let color_primary = default_theme;
+// RGB offsets from the accent colour, kept from the original tuning
 let color_primary_shade_k = [-8, -7, -21];
+let color_primary_shade_darker_k = [-16, -14, -42];
 let color_links_k = [3, 21, 27];
 let color_links_hover_k = [-24, -25, -15];
 let color_reply_own_hover_k = [-31, -32, -31];
 let color_reply_own_active_k = [-52, -46, -60];
 
-let rainbow_id = null;
+let color_theme = null;  // stays null until the user picks a colour
+let color_primary = default_theme.slice(0);
+
+let rainbow_id = 0;
 let rainbow_speed = 1;
 let rainbow_saturation = 0.8;
 let rainbow_value = 0.5;
@@ -25,37 +29,52 @@ function hsv2rgb(h, s, v) {
     return [Math.round(f(5) * 255), Math.round(f(3) * 255), Math.round(f(1) * 255)];
 }
 
-chrome.storage.sync.get(['color_theme'], function (result) {
-    if (result.color_theme) {
+function accent() {
+    return color_theme ? color_theme.slice(0) : default_theme.slice(0);
+}
+
+chrome.storage.sync.get(['color_theme', 'r_mode', 'r_speed', 'r_saturation', 'r_value'], function (result) {
+    if (result.color_theme)
         color_theme = hex2rgb(result.color_theme);
-        color_primary = color_theme.slice(0);
+    if (result.r_speed !== undefined)
+        rainbow_speed = result.r_speed;
+    if (result.r_saturation !== undefined)
+        rainbow_saturation = result.r_saturation;
+    if (result.r_value !== undefined)
+        rainbow_value = result.r_value;
+
+    if (result.r_mode) {
+        rainbow_id = rainbowStart();
     }
-    else
-        color_primary = default_theme.slice(0);
-    changeTheme();
+    else {
+        color_primary = accent();
+        changeTheme();
+    }
 });
 
 chrome.runtime.onMessage.addListener(function(request) {
-    if (request.color) {
+    if (request.color !== undefined) {
         color_theme = hex2rgb(request.color);
-        color_primary = color_theme.slice(0);
+        color_primary = accent();
         changeTheme();
     }
-    else if (request.r_mode !== undefined)
+    else if (request.r_mode !== undefined) {
         if (request.r_mode) {
-            rainbow_id = rainbowStart();
+            if (!rainbow_id)
+                rainbow_id = rainbowStart();
         }
         else {
             clearInterval(rainbow_id);
             rainbow_id = 0;
-            color_primary = color_theme.slice(0);
+            color_primary = accent();
             changeTheme();
         }
-    else if (request.r_speed)
+    }
+    else if (request.r_speed !== undefined)
         rainbow_speed = request.r_speed;
-    else if (request.r_saturation)
+    else if (request.r_saturation !== undefined)
         rainbow_saturation = request.r_saturation;
-    else if (request.r_value)
+    else if (request.r_value !== undefined)
         rainbow_value = request.r_value;
 });
 
@@ -66,47 +85,65 @@ function saveRChanges() {
 }
 setInterval(saveRChanges, 5000);
 
-function rgbWrap(arr) {
-    return `rgb(${arr.join(',')})`;
+function clamp(x) {
+    return Math.min(255, Math.max(0, Math.round(x)));
 }
 
-function modK(arr, wrap=true) {
-    let temp = color_primary.slice(0);
-    temp.forEach((_, i) => {
-        temp[i] += arr[i];
-        if (temp[i] < 0)
-            temp[i] = 0;
-    });
-    if (wrap)
-        temp = rgbWrap(temp);
-    return temp;
+function modK(arr) {
+    return color_primary.map((c, i) => clamp(c + arr[i]));
+}
+
+function rgbWrap(arr) {
+    return `rgb(${arr.join(', ')})`;
+}
+
+function buildCss() {
+    let primary = color_primary.map(clamp);
+    let shade = modK(color_primary_shade_k);
+    let shadeDarker = modK(color_primary_shade_darker_k);
+    let links = modK(color_links_k);
+    let linksHover = modK(color_links_hover_k);
+    let replyHover = modK(color_reply_own_hover_k);
+    let replyActive = modK(color_reply_own_active_k);
+
+    let vars = {
+        "--color-primary":                  rgbWrap(primary),
+        "--color-chat-active":              rgbWrap(primary),
+        "--color-green":                    rgbWrap(primary),
+        "--color-green-rgb":                primary.join(', '),
+        "--color-green-darker":             rgbWrap(shade),
+        "--color-text-meta-colored":        rgbWrap(primary),
+        "--color-background-own":           rgbWrap(primary),
+        "--color-background-own-apple":     rgbWrap(primary),
+
+        "--color-primary-shade":            rgbWrap(shade),
+        "--color-primary-shade-darker":     rgbWrap(shadeDarker),
+        "--color-primary-shade-rgb":        shade.join(', '),
+        "--color-background-own-selected":  rgbWrap(shade),
+
+        "--color-links":                    rgbWrap(links),
+        "--color-links-hover":              rgbWrap(linksHover),
+        "--color-reply-own-hover":          rgbWrap(replyHover),
+        "--color-reply-own-hover-apple":    rgbWrap(replyHover),
+        "--color-reply-own-active":         rgbWrap(replyActive),
+        "--color-reply-own-active-apple":   rgbWrap(replyActive),
+    };
+
+    let decls = Object.keys(vars).map(k => `${k}:${vars[k]} !important;`).join('');
+    // Telegram defines the light palette inside @layer variables{:root{...}} and the
+    // dark one in an unlayered .component-theme-dark{...} rule. An unlayered !important
+    // rule matching both selectors is the only thing that outranks each of them.
+    return `:root,.component-theme-dark{${decls}}`;
 }
 
 function changeTheme() {
-    let elem = document.getElementsByClassName("theme-dark")[0];
-    if (!elem)  // there must be a separate handler for light theme
-        return;
-    let elemCss = elem.style['cssText'].split('; ');
-    for (let i = 0; i < elemCss.length; i++) {
-        let attr = elemCss[i].slice(0, elemCss[i].indexOf(':'));
-        switch (attr) {
-            case "--color-primary":                 elemCss[i] = attr + ':' + rgbWrap(color_primary);         break;
-            case "--color-chat-active":             elemCss[i] = attr + ':' + rgbWrap(color_primary);         break;
-            case "--color-green":                   elemCss[i] = attr + ':' + rgbWrap(color_primary);         break;
-            case "--color-text-meta-colored":       elemCss[i] = attr + ':' + rgbWrap(color_primary);         break;
-            case "--color-background-own":          elemCss[i] = attr + ':' + rgbWrap(color_primary);         break;
-            case "--color-primary-opacity":         elemCss[i] = attr + ':' + rgbWrap(color_primary);         break;
-
-            case "--color-primary-shade":           elemCss[i] = attr + ':' + modK(color_primary_shade_k);    break;
-            case "--color-background-own-selected": elemCss[i] = attr + ':' + modK(color_primary_shade_k);    break;
-
-            case "--color-links":                   elemCss[i] = attr + ':' + modK(color_links_k);            break;
-            case "--color-links-hover":             elemCss[i] = attr + ':' + modK(color_links_hover_k);      break;
-            case "--color-reply-own-hover":         elemCss[i] = attr + ':' + modK(color_reply_own_hover_k);  break;
-            case "--color-reply-own-active":        elemCss[i] = attr + ':' + modK(color_reply_own_active_k); break;
-        }
+    let style = document.getElementById(STYLE_ID);
+    if (!style) {
+        style = document.createElement("style");
+        style.id = STYLE_ID;
+        (document.head || document.documentElement).appendChild(style);
     }
-    elem.style = elemCss.join('; ');
+    style.textContent = buildCss();
 }
 
 function rainbowStart() {

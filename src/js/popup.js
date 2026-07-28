@@ -24,14 +24,15 @@ chrome.storage.sync.get(['color_theme', 'r_mode', 'r_speed', 'r_saturation', 'r_
     if (!color_theme)
         color_theme = default_theme;
     r_mode = result.r_mode;
-    r_speed = result.r_speed ? result.r_speed : 0;
-    r_saturation = result.r_saturation ? result.r_saturation : 0;
-    r_value = result.r_value ? result.r_value : 0;
+    r_speed = result.r_speed !== undefined ? result.r_speed : 1;
+    r_saturation = result.r_saturation !== undefined ? result.r_saturation : 0.8;
+    r_value = result.r_value !== undefined ? result.r_value : 0.5;
     header.style.background = color_theme;
     colorPicker.value = color_theme;
     rainbow_speed.value = r_speed * 10;
     rainbow_saturation.value = r_saturation * 10;
     rainbow_value.value = r_value * 10;
+    document.getElementById("rainbow-speed-text").innerHTML = r_speed.toString();
     if (r_mode)
         rainbow_checkbox.checked = true;
     else
@@ -52,7 +53,10 @@ function watchColorPicker(event) {
 function sendMessage(data) {
     chrome.tabs.query({currentWindow: true, active: true}, function (tabs) {
         let activeTab = tabs[0];
-        chrome.tabs.sendMessage(activeTab.id, data);
+        if (!activeTab)
+            return;
+        // swallow "Receiving end does not exist" when the tab isn't Telegram Web A
+        chrome.tabs.sendMessage(activeTab.id, data, () => chrome.runtime.lastError);
     });
 }
 function saveData(data) {
