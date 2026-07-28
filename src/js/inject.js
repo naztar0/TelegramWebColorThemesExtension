@@ -97,6 +97,10 @@ function rgbWrap(arr) {
     return `rgb(${arr.join(', ')})`;
 }
 
+function rgbaWrap(arr, a) {
+    return `rgba(${arr.join(', ')}, ${a})`;
+}
+
 function buildCss() {
     let primary = color_primary.map(clamp);
     let shade = modK(color_primary_shade_k);
@@ -107,26 +111,31 @@ function buildCss() {
     let replyActive = modK(color_reply_own_active_k);
 
     let vars = {
-        "--color-primary":                  rgbWrap(primary),
-        "--color-chat-active":              rgbWrap(primary),
-        "--color-green":                    rgbWrap(primary),
-        "--color-green-rgb":                primary.join(', '),
-        "--color-green-darker":             rgbWrap(shade),
-        "--color-text-meta-colored":        rgbWrap(primary),
-        "--color-background-own":           rgbWrap(primary),
-        "--color-background-own-apple":     rgbWrap(primary),
+        "--color-primary":                     rgbWrap(primary),
+        "--color-active":                      rgbWrap(primary),
+        "--color-chat-active":                 rgbWrap(primary),
+        "--color-green":                       rgbWrap(primary),
+        "--color-green-rgb":                   primary.join(', '),
+        "--color-green-darker":                rgbWrap(shade),
+        "--color-text-meta-colored":           rgbWrap(primary),
+        "--color-background-own":              rgbWrap(primary),
+        "--color-background-own-apple":        rgbWrap(primary),
+        "--color-primary-opacity-hover":       rgbaWrap(primary, 0.3),
 
-        "--color-primary-shade":            rgbWrap(shade),
-        "--color-primary-shade-darker":     rgbWrap(shadeDarker),
-        "--color-primary-shade-rgb":        shade.join(', '),
-        "--color-background-own-selected":  rgbWrap(shade),
+        "--color-code":                        rgbWrap(shade),
+        "--color-active-darker":               rgbWrap(shade),
+        "--color-primary-shade":               rgbWrap(shade),
+        "--color-primary-shade-darker":        rgbWrap(shadeDarker),
+        "--color-primary-shade-rgb":           shade.join(', '),
+        "--color-background-own-selected":     rgbWrap(shade),
 
-        "--color-links":                    rgbWrap(links),
-        "--color-links-hover":              rgbWrap(linksHover),
-        "--color-reply-own-hover":          rgbWrap(replyHover),
-        "--color-reply-own-hover-apple":    rgbWrap(replyHover),
-        "--color-reply-own-active":         rgbWrap(replyActive),
-        "--color-reply-own-active-apple":   rgbWrap(replyActive),
+        "--color-links":                       rgbWrap(links),
+        "--color-links-hover":                 rgbWrap(linksHover),
+        "--color-reply-own-hover":             rgbWrap(replyHover),
+        "--color-reply-own-hover-apple":       rgbWrap(replyHover),
+        "--color-reply-own-active":            rgbWrap(replyActive),
+        "--color-reply-own-active-apple":      rgbWrap(replyActive),
+        "--color-voice-transcribe-button-own": rgbWrap(links),
     };
 
     let decls = Object.keys(vars).map(k => `${k}:${vars[k]} !important;`).join('');
